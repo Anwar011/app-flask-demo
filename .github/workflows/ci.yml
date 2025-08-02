@@ -1,0 +1,33 @@
+name: CI/CD with Docker Hub
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Login to Docker Hub
+      run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+
+    - name: Build Docker image
+      run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }} .
+
+    - name: Push to Docker Hub
+      run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }}
+
+    - name: Deploy to Kubernetes
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.BASTION_HOST }}
+        username: ${{ secrets.BASTION_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          ssh master@VM-MASTER-IP '
+            kubectl set image deployment/flask-demo flask-demo=${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }}
+          '
