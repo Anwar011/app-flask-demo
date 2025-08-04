@@ -25,9 +25,9 @@ jobs:
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.BASTION_HOST }}
-        username: ${{ secrets.BASTION_USER }}
+        username: ubuntu                                # ✅ utilisateur SSH correct
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          ssh master@VM-MASTER-IP '
+          ssh -o StrictHostKeyChecking=no master@VM-MASTER-IP '
             kubectl set image deployment/flask-demo flask-demo=${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }}
           '
