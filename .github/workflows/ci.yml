@@ -28,6 +28,6 @@ jobs:
         username: ubuntu                                # ✅ utilisateur SSH correct
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          ssh -o StrictHostKeyChecking=no master@VM-MASTER-IP '
+          ssh -o StrictHostKeyChecking=no master@192.168.122.54 '
             kubectl set image deployment/flask-demo flask-demo=${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }}
           '
