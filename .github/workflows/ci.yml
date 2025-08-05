@@ -18,16 +18,23 @@ jobs:
     - name: Build Docker image
       run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }} .
 
-    - name: Push to Docker Hub
+    - name: Tag image as latest
+      run: docker tag ${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:latest
+
+    - name: Push image with commit SHA
       run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }}
+
+    - name: Push image with latest tag
+      run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:latest
 
     - name: Deploy to Kubernetes
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.BASTION_HOST }}
-        username: ubuntu                                # ✅ utilisateur SSH correct
+        username: ubuntu
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           ssh -o StrictHostKeyChecking=no ubuntu@192.168.122.54 '
-            kubectl set image deployment/flask-demo flask-demo=${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }}
+            kubectl set image deployment/flask-demo flask-demo=${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }} &&
+            kubectl rollout status deployment/flask-demo
           '
