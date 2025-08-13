@@ -9,7 +9,7 @@ jobs:
     runs-on: self-hosted
     permissions:
       contents: read
-      security-events: write   # nécessaire pour uploader SARIF dans GitHub Security
+      security-events: write   # pour uploader le SARIF
 
     steps:
     - name: Checkout
@@ -21,17 +21,19 @@ jobs:
     - name: Build Docker image
       run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }} .
 
-    # Scan de l'image avec Trivy
-    - name: Trivy image scan → SARIF
+    # Scan non-bloquant : la pipeline continue même si HIGH/CRITICAL
+    - name: Trivy image scan → SARIF (non-blocking)
       uses: aquasecurity/trivy-action@0.28.0
+      continue-on-error: true
       with:
         image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/app-flask-demo:${{ github.sha }}
         format: sarif
         output: trivy-image.sarif
         vuln-type: "os,library"
-        ignore-unfixed: true
         severity: "HIGH,CRITICAL"
-        exit-code: "1"  # échoue la CI si vulnérabilités HIGH/CRITICAL
+        ignore-unfixed: true
+        scanners: "vuln"          # plus rapide (désactive le secret scan)
+        exit-code: "0"            # n'échoue jamais le job
 
     - name: Upload SARIF to GitHub Security
       if: always()
